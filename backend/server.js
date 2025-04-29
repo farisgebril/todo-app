@@ -10,10 +10,13 @@ app.get('/', (req, res) => {
     <html>
       <head><title>Todo App</title></head>
       <body style="text-align: center; background-color: #f0f0f0;">
-        <h1>Welcome to the Todo App Nigga!!</h1>
-        <video width="720" height="480" controls autoplay loop muted>
-          <source src="https://drive.google.com/uc?export=download&id=1yvHq77uUvdqa01i10szucuxCs0YqzdTJ" type="video/mp4">
-        </video>
+        <h1>Welcome to the Todo App!</h1>
+        <div style="position:relative; width:100%; height:0px; padding-bottom:56.250%">
+          <iframe allow="fullscreen;autoplay" allowfullscreen height="100%" 
+            src="https://streamable.com/e/qgkxjb?autoplay=1" width="100%" 
+            style="border:none; width:100%; height:100%; position:absolute; left:0px; top:0px; overflow:hidden;">
+          </iframe>
+        </div>
       </body>
     </html>
   `);
