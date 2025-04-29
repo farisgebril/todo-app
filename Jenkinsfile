@@ -13,26 +13,26 @@ pipeline {
     stages {
         stage('Confirm Jenkinsfile Execution') {
             steps {
-                echo '✅ Jenkinsfile is being read and pipeline is executing.'
+                echo "✅ Jenkinsfile is being read and pipeline is executing."
             }
         }
 
         stage('Clone Repo') {
             steps {
-                echo '✅ Cloning repository (already handled via Pipeline script from SCM)'
+                echo "✅ Cloning repository (already handled via Pipeline script from SCM)"
             }
         }
 
         stage('Docker Login') {
             steps {
-                echo '🔐 Logging in to DockerHub...'
+                echo "🔐 Logging in to DockerHub..."
                 sh "echo \$DOCKERHUB_CREDENTIALS_PSW | docker login -u \$DOCKERHUB_CREDENTIALS_USR --password-stdin"
             }
         }
 
         stage('Build & Push Image') {
             steps {
-                echo '🔨 Building and pushing Docker image...'
+                echo "🔨 Building and pushing Docker image..."
                 sh "docker build -t ${DOCKER_IMAGE}:latest ."
                 sh "docker push ${DOCKER_IMAGE}:latest"
             }
@@ -40,15 +40,15 @@ pipeline {
 
         stage('Deploy on Remote EC2') {
             steps {
-                echo '🚀 Deploying on EC2...'
+                echo "🚀 Deploying on EC2..."
                 sshagent(['ssh-key-credentials']) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ubuntu@${DEPLOY_HOST} << 'ENDSSH'
-                        docker pull ${DOCKER_IMAGE}:latest || true
-                        docker stop ${CONTAINER_NAME} || true
-                        docker rm ${CONTAINER_NAME} || true
-                        docker run -d --restart unless-stopped --name ${CONTAINER_NAME} -p ${DEPLOY_PORT}:8081 ${DOCKER_IMAGE}:latest
-                    ENDSSH
+                    ssh -o StrictHostKeyChecking=no ubuntu@${DEPLOY_HOST} <<ENDSSH
+docker pull ${DOCKER_IMAGE}:latest || true
+docker stop ${CONTAINER_NAME} || true
+docker rm ${CONTAINER_NAME} || true
+docker run -d --restart unless-stopped --name ${CONTAINER_NAME} -p ${DEPLOY_PORT}:8081 ${DOCKER_IMAGE}:latest
+ENDSSH
                     """
                 }
             }
@@ -56,19 +56,16 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                echo '🔍 Verifying deployment...'
                 sleep(time: 5, unit: 'SECONDS')
                 sh "curl -sSf http://${DEPLOY_HOST}:${DEPLOY_PORT} || exit 1"
+                echo "✅ Deployment verified successfully."
             }
         }
     }
 
     post {
-        success {
-            echo '✅ Deployment succeeded!'
-        }
         failure {
-            echo '❌ Deployment failed.'
+            echo "❌ Deployment failed."
         }
     }
 }
