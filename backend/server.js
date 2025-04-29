@@ -10,7 +10,7 @@ app.get('/', (req, res) => {
     <html>
       <head><title>Todo App</title></head>
       <body style="text-align: center; background-color: #f0f0f0;">
-        <h1>Welcome to the Todo App Nigga!!!</h1>
+        <h1>Welcome to the Todo App Nigga!!</h1>
         <video width="720" height="480" controls autoplay loop muted>
           <source src="https://drive.google.com/uc?export=download&id=1yvHq77uUvdqa01i10szucuxCs0YqzdTJ" type="video/mp4">
         </video>
