@@ -11,35 +11,36 @@ pipeline {
     }
 
     stages {
-        stage('Hello') {
+        stage('Confirm Jenkinsfile Execution') {
             steps {
-                echo "👋 This Jenkinsfile is definitely being read"
+                echo '✅ Jenkinsfile is being read and pipeline is executing.'
             }
         }
 
         stage('Clone Repo') {
             steps {
-                git branch: 'main', 
-                    url: 'git@github.com:farisgebril/todo-app.git', 
-                    credentialsId: 'ssh-key-credentials'
+                echo '✅ Cloning repository (already handled via Pipeline script from SCM)'
             }
         }
 
         stage('Docker Login') {
             steps {
+                echo '🔐 Logging in to DockerHub...'
                 sh "echo \$DOCKERHUB_CREDENTIALS_PSW | docker login -u \$DOCKERHUB_CREDENTIALS_USR --password-stdin"
             }
         }
 
-        stage('Build & Push') {
+        stage('Build & Push Image') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE}:latest -f Dockerfile ."
+                echo '🔨 Building and pushing Docker image...'
+                sh "docker build -t ${DOCKER_IMAGE}:latest ."
                 sh "docker push ${DOCKER_IMAGE}:latest"
             }
         }
 
-        stage('Deploy to Production') {
+        stage('Deploy on Remote EC2') {
             steps {
+                echo '🚀 Deploying on EC2...'
                 sshagent(['ssh-key-credentials']) {
                     sh """
                     ssh -o StrictHostKeyChecking=no ubuntu@${DEPLOY_HOST} << 'ENDSSH'
@@ -53,18 +54,21 @@ pipeline {
             }
         }
 
-        stage('Verify') {
+        stage('Verify Deployment') {
             steps {
+                echo '🔍 Verifying deployment...'
                 sleep(time: 5, unit: 'SECONDS')
                 sh "curl -sSf http://${DEPLOY_HOST}:${DEPLOY_PORT} || exit 1"
-                slackSend channel: '#deployments', message: "✅ SUCCESS: Deployed to ${DEPLOY_HOST}:${DEPLOY_PORT}"
             }
         }
     }
 
     post {
+        success {
+            echo '✅ Deployment succeeded!'
+        }
         failure {
-            slackSend channel: '#alerts', message: "🚨 FAILED: Deployment ${env.BUILD_URL}"
+            echo '❌ Deployment failed.'
         }
     }
 }
