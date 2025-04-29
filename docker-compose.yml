@@ -1,18 +1,11 @@
-FROM node:18-alpine
-WORKDIR /app
+version: '3.8'
 
-# Copy package files first (optimizes Docker cache)
-COPY backend/package*.json ./
-
-# Install production dependencies
-RUN npm ci --only=production
-
-# Copy application files
-COPY backend/ .
-
-# Configure port
-ENV PORT=8081
-EXPOSE 8081
-
-# Runtime command
-CMD ["node", "server.js"]
+services:
+  backend:
+    image: farisgebril/todo-app-backend:latest
+    container_name: todo-backend
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    environment:
+      - PORT=8081
