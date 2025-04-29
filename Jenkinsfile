@@ -11,6 +11,12 @@ pipeline {
     }
 
     stages {
+        stage('Hello') {
+            steps {
+                echo "👋 This Jenkinsfile is definitely being read"
+            }
+        }
+
         stage('Clone Repo') {
             steps {
                 git branch: 'main', 
