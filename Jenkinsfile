@@ -5,63 +5,54 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         SSH_KEY = credentials('ssh-key-credentials')
         DOCKER_IMAGE = "farisgebril/todo-app-backend"
-        PORT = "8081"
+        DEPLOY_HOST = "44.212.9.210"
+        DEPLOY_PORT = "8081"
     }
 
     stages {
-        stage('Clone GitHub Repo') {
+        stage('Clone Repo') {
             steps {
-                git branch: 'main', url: 'git@github.com:farisgebril/todo-app.git', credentialsId: 'ssh-key-credentials'
+                git branch: 'main', 
+                url: 'git@github.com:farisgebril/todo-app.git', 
+                credentialsId: 'ssh-key-credentials'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build & Push') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE}:latest ."
-                }
+                sh "docker build -t ${DOCKER_IMAGE}:latest -f Dockerfile ."
+                sh "echo \$DOCKERHUB_CREDENTIALS_PSW | docker login -u \$DOCKERHUB_CREDENTIALS_USR --password-stdin"
+                sh "docker push ${DOCKER_IMAGE}:latest"
             }
         }
 
-        stage('Push Docker Image to DockerHub') {
+        stage('Deploy to Production') {
             steps {
-                script {
-                    sh "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"
-                    sh "docker push ${DOCKER_IMAGE}:latest"
-                }
-            }
-        }
-
-        stage('Stop old container') {
-            steps {
-                script {
+                sshagent(['ssh-key-credentials']) {
                     sh """
-                    docker ps -q --filter "publish=${PORT}" | xargs -r docker stop
-                    docker ps -a -q --filter "publish=${PORT}" | xargs -r docker rm
+                    ssh -o StrictHostKeyChecking=no ubuntu@${DEPLOY_HOST} \"
+                    docker pull ${DOCKER_IMAGE}:latest || true
+                    docker stop \$(docker ps -q --filter publish=${DEPLOY_PORT}) || true
+                    docker rm \$(docker ps -aq --filter publish=${DEPLOY_PORT}) || true
+                    docker run -d --restart unless-stopped -p ${DEPLOY_PORT}:8081 ${DOCKER_IMAGE}:latest
+                    \"
                     """
                 }
             }
         }
 
-        stage('Run new container') {
+        stage('Verify') {
             steps {
-                script {
-                    sh "docker run -d -p ${PORT}:3000 ${DOCKER_IMAGE}:latest"
-                }
-            }
-        }
-
-        stage('Rollback if needed') {
-            steps {
-                input message: 'Deploy looks good? Click YES to continue, or ABORT to rollback.', ok: 'YES, continue'
+                sleep(time: 5, unit: 'SECONDS')
+                sh "curl -sSf http://${DEPLOY_HOST}:${DEPLOY_PORT} > /dev/null"
+                slackSend channel: '#deployments', message: "SUCCESS: Deployed to ${DEPLOY_HOST}:${DEPLOY_PORT}"
             }
         }
     }
 
     post {
-        aborted {
-            echo "Deployment aborted. Rolling back!"
-            // Here you can add more rollback logic, like redeploy previous version
+        failure {
+            slackSend channel: '#alerts', message: "FAILED: Deployment ${env.BUILD_URL}"
         }
     }
 }

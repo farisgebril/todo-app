@@ -1,12 +1,18 @@
-FROM node:16
-
+FROM node:18-alpine
 WORKDIR /app
 
+# Copy package files first (optimizes Docker cache)
 COPY backend/package*.json ./
-RUN npm install
 
-COPY backend .
+# Install production dependencies
+RUN npm ci --only=production
 
-EXPOSE 3000
+# Copy application files
+COPY backend/ .
 
-CMD ["npm", "start"]
+# Configure port
+ENV PORT=8081
+EXPOSE 8081
+
+# Runtime command
+CMD ["node", "server.js"]
