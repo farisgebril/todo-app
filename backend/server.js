@@ -19,6 +19,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-app.listen(port, () => {
+// 👇 Bind to 0.0.0.0 so it’s accessible from outside the container
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server running on port ${port}`);
 });
